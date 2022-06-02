@@ -1,4 +1,3 @@
-import { AddressZero } from "@ethersproject/constants";
 import {
   useAddress,
   useMetamask,
@@ -7,28 +6,30 @@ import {
   useVote,
   useNetwork,
 } from "@thirdweb-dev/react";
-import { useState, useEffect, useMemo } from "react";
 import { ChainId } from "@thirdweb-dev/sdk";
+import { useState, useEffect, useMemo } from "react";
+import { AddressZero } from "@ethersproject/constants";
 
 const App = () => {
+  // Use the hooks thirdweb give us.
   const address = useAddress();
   const network = useNetwork();
   const connectWithMetamask = useMetamask();
-  console.log("address", address);
+  console.log("👋 Address:", address);
 
+  // Initialize our token contract
+  const token = useToken("0x644Fc0Bff446155F8B6b68Da079E94cF31e27116");
+  const vote = useVote("0x1295e1f2a7716d5d83CFb9B102ceF7770F718912");
   // Initialize our editionDrop contract
   const editionDrop = useEditionDrop(
-    "0xe09ec06224B9ce267db935CBB141D3d14c245a5A"
+    "0xe09ec06224B9ce267db935CBB141D3d14c245a5A",
+    token,
+    vote
   );
-  const token = useToken("0xe09ec06224B9ce267db935CBB141D3d14c245a5A");
-
-  const vote = useVote("0x1295e1f2a7716d5d83CFb9B102ceF7770F718912");
   // State variable for us to know if user has our NFT.
   const [hasClaimedNFT, setHasClaimedNFT] = useState(false);
-
   // isClaiming lets us easily keep a loading state while the NFT is minting.
   const [isClaiming, setIsClaiming] = useState(false);
-
   // Holds the amount of token each member has in state.
   const [memberTokenAmounts, setMemberTokenAmounts] = useState([]);
   // The array holding all of our members addresses.
@@ -147,7 +148,7 @@ const App = () => {
   }, [memberAddresses, memberTokenAmounts]);
 
   useEffect(() => {
-    // If they don't have a connected wallet, exit!
+    // If they don't have an connected wallet, exit!
     if (!address) {
       return;
     }
@@ -185,6 +186,7 @@ const App = () => {
       setIsClaiming(false);
     }
   };
+
   if (address && network?.[0].data.chain.id !== ChainId.Rinkeby) {
     return (
       <div className="unsupported-network">
@@ -197,30 +199,34 @@ const App = () => {
     );
   }
 
+  // This is the case where the user hasn't connected their wallet
+  // to your web app. Let them call connectWallet.
   if (!address) {
     return (
       <div className="landing">
-        <h1>Bienvenido a CannaDAO</h1>
+        <h1>Welcome to coffeDAO</h1>
         <button onClick={connectWithMetamask} className="btn-hero">
-          Conecta tu billetera
+          Connect your wallet
         </button>
       </div>
     );
   }
 
+  // If the user has already claimed their NFT we want to display the interal DAO page to them
+  // only DAO members will see this. Render all the members + token amounts.
   if (hasClaimedNFT) {
     return (
       <div className="member-page">
-        <h1>Eres miembro de cannaDAO🪴🪴 </h1>
-        <p>Sientete libre de compartir tu sabiduria con el resto</p>
+        <h1>Eres miembro de cannaDAO🪴🪴</h1>
+        <p>"bienvenido a esta super comunidad"</p>
         <div>
           <div>
             <h2>Lista de miembros</h2>
             <table className="card">
               <thead>
                 <tr>
-                  <th>Direccion</th>
-                  <th>Monto de token</th>
+                  <th>direccion</th>
+                  <th>cantidad de token</th>
                 </tr>
               </thead>
               <tbody>
@@ -236,7 +242,7 @@ const App = () => {
             </table>
           </div>
           <div>
-            <h2>Propuestas activas</h2>
+            <h2>propuestas activas</h2>
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
@@ -346,17 +352,12 @@ const App = () => {
               ))}
               <button disabled={isVoting || hasVoted} type="submit">
                 {isVoting
-                  ? "Voting..."
+                  ? "votando..."
                   : hasVoted
-                  ? "You Already Voted"
-                  : "Submit Votes"}
+                  ? "ya votaste"
+                  : "enviar voto"}
               </button>
-              {!hasVoted && (
-                <small>
-                  This will trigger multiple transactions that you will need to
-                  sign.
-                </small>
-              )}
+              {!hasVoted && <small>necesita tu firma esta accion</small>}
             </form>
           </div>
         </div>
